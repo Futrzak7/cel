@@ -18,40 +18,44 @@ function loadData() {
   }
 }
 
+let STORE = loadData();
+
 function saveData(data) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
     return true;
   } catch (err) {
+    // cannot persist on serverless filesystem — keep in-memory
+    console.error('saveData failed:', err && err.message);
     return false;
   }
 }
 
 module.exports = function handler(req, res) {
   try {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
-  }
-  const { user, amount, password } = req.body || {};
-  if (!user || typeof amount !== 'number') {
-    return res.status(400).json({ ok: false, error: 'Invalid payload' });
-  }
-  if (!PASSWORDS[user] || PASSWORDS[user] !== String(password)) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
-  }
-  const d = loadData();
-  d.amounts[user] = Math.max(0, (d.amounts[user] || 0) + amount);
-  const saved = saveData(d);
-  if (!saved) {
-    return res.status(500).json({ ok: false, error: 'Server error: unable to persist data' });
-  }
-  return res.status(200).json({ ok: true, state: d });
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    if (req.method !== 'POST') {
+      return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    }
+    const { user, amount, password } = req.body || {};
+    if (!user || typeof amount !== 'number') {
+      return res.status(400).json({ ok: false, error: 'Invalid payload' });
+    }
+    if (!PASSWORDS[user] || PASSWORDS[user] !== String(password)) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+    // Update in-memory store
+    STORE.amounts = STORE.amounts || { kuba: 0, adrian: 0 };
+    STORE.amounts[user] = Math.max(0, (STORE.amounts[user] || 0) + amount);
+    const persisted = saveData(STORE);
+    const result = { ok: true, state: STORE };
+    if (!persisted) result.warning = 'unable_to_persist';
+    return res.status(200).json(result);
   } catch (ex) {
     return res.status(500).json({ ok: false, error: 'Server exception: ' + (ex && ex.message) });
   }
