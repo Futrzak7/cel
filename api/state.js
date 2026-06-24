@@ -9,12 +9,12 @@ function loadData() {
     return JSON.parse(raw);
   } catch (error) {
     const initial = { amounts: { kuba: 0, adrian: 0 }, current: 'kuba' };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
     return initial;
   }
 }
 
 module.exports = function handler(req, res) {
+  try {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,4 +23,7 @@ module.exports = function handler(req, res) {
   }
   const state = loadData();
   return res.status(200).json({ ok: true, state });
+  } catch (ex) {
+    return res.status(500).json({ ok: false, error: 'Server exception: ' + (ex && ex.message) });
+  }
 };

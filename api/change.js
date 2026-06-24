@@ -14,16 +14,21 @@ function loadData() {
     return JSON.parse(raw);
   } catch (error) {
     const initial = { amounts: { kuba: 0, adrian: 0 }, current: 'kuba' };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
     return initial;
   }
 }
 
 function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 module.exports = function handler(req, res) {
+  try {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -42,6 +47,12 @@ module.exports = function handler(req, res) {
   }
   const d = loadData();
   d.amounts[user] = Math.max(0, (d.amounts[user] || 0) + amount);
-  saveData(d);
+  const saved = saveData(d);
+  if (!saved) {
+    return res.status(500).json({ ok: false, error: 'Server error: unable to persist data' });
+  }
   return res.status(200).json({ ok: true, state: d });
+  } catch (ex) {
+    return res.status(500).json({ ok: false, error: 'Server exception: ' + (ex && ex.message) });
+  }
 };
