@@ -41,7 +41,7 @@ async function saveToServerChange(user, amount){
   try{
     const { response, json } = await fetchJson(API_BASE + '/api/change', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ user, amount, password: sessionPass })
+      body: JSON.stringify({ user, amount })
     });
     if(response.ok && json.ok) return json.state;
     throw new Error(json && json.error ? json.error : 'Server error');
@@ -90,14 +90,10 @@ function render(){
   progressFill.style.width = pct + '%';
   goalButtons.forEach(b => b.classList.toggle('active', b.dataset.id === cur));
   adminNameInput.value = state.admin.name || '';
-  // show login status
-  const logged = state.sessionUser;
-  if(loginStatus) loginStatus.textContent = logged ? ('Zalogowany: ' + logged) : 'Brak zalogowanego użytkownika';
-  // enable/disable change buttons: only the logged-in user for current goal can change
+  // Enable all change buttons (no login required)
   changeButtons.forEach(btn => {
-    const allowed = (logged === state.current);
-    btn.disabled = !allowed;
-    btn.classList.toggle('disabled', btn.disabled);
+    btn.disabled = false;
+    btn.classList.toggle('disabled', false);
   });
 }
 
@@ -105,19 +101,16 @@ function addAmount(amount){
   const cur = state.current;
   const newVal = (state.amounts[cur] || 0) + amount;
   state.amounts[cur] = Math.max(0, newVal);
-  // try save to server; if fails, fallback to local change
-  if(state.sessionUser && sessionPass){
-    saveToServerChange(state.sessionUser, amount).then(s=>{
-      if(s){ state = Object.assign(state, s); render(); }
-    }).catch(err=>{
-      // fallback locally
-      saveLocal();
-      render();
-      alert('Nie udało się zsynchronizować z serwerem: ' + err.message);
-    });
-  } else {
-    // no session or server — just local change
+  // Always try to save to server (no login needed)
+  saveToServerChange(cur, amount).then(s=>{
+    if(s){ state = Object.assign(state, s); render(); }
+  }).catch(err=>{
+    // fallback locally
     saveLocal();
+    render();
+    alert('Nie udało się zsynchronizować z serwerem: ' + err.message);
+  });
+
     render();
   }
 }
@@ -155,34 +148,6 @@ changeButtons.forEach(btn => {
     addAmount(amount);
   })
 });
-
-// Login handlers
-if(loginBtn){
-  loginBtn.addEventListener('click', ()=>{
-    const user = document.querySelector('input[name="login-user"]:checked').value;
-    const pass = loginPassword.value || '';
-    // validate with server by attempting a no-op change of 0
-    sessionPass = pass;
-    saveToServerChange(user, 0).then(s=>{
-      state.sessionUser = user;
-      if(s) state = Object.assign(state, s);
-      saveLocal(); render();
-      alert('Zalogowano jako ' + user);
-    }).catch(e=>{
-      sessionPass = null;
-      alert('Błąd logowania: ' + (e.message || 'Błędne hasło dla ' + user));
-    }).finally(()=>{ loginPassword.value = ''; });
-  });
-}
-
-if(logoutBtn){
-  logoutBtn.addEventListener('click', ()=>{
-    state.sessionUser = null;
-    saveLocal();
-    render();
-    alert('Wylogowano');
-  });
-}
 
 saveAdminBtn.addEventListener('click', ()=>{
   state.admin.name = adminNameInput.value.trim();

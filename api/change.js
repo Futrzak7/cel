@@ -1,10 +1,5 @@
 const storage = require('./storage');
 
-const PASSWORDS = {
-  kuba: '13',
-  adrian: '67'
-};
-
 module.exports = async function handler(req, res) {
   try {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,14 +11,11 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({ ok: false, error: 'Method not allowed' });
     }
-    const { user, amount, password } = req.body || {};
+    const { user, amount } = req.body || {};
     if (!user || typeof amount !== 'number') {
       return res.status(400).json({ ok: false, error: 'Invalid payload' });
     }
-    if (!PASSWORDS[user] || PASSWORDS[user] !== String(password)) {
-      return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
-    // load current state
+    // No password required — anyone can update
     const state = await storage.loadState();
     state.amounts = state.amounts || { kuba: 0, adrian: 0 };
     state.amounts[user] = Math.max(0, (state.amounts[user] || 0) + amount);
