@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zbiórka - Kuba i Adrian</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Zbiórka - Wybierz cel</h1>
+      </header>
+
+      <section class="goals">
+        <div class="names">
+          <button class="goal" data-id="kuba" id="goal-kuba">Kuba</button>
+          <button class="goal" data-id="adrian" id="goal-adrian">Adrian</button>
+        </div>
+      </section>
+
+      <section class="progress-section">
+        <div class="selected-goal">Cel: <span id="goal-title"></span></div>
+        <div class="progress-wrapper">
+          <div class="progress-info">
+            <span id="collected">0</span> / <span id="target">0</span> zł
+            <span id="percent">0%</span>
+          </div>
+          <div class="progress-bar" aria-hidden="true">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="buttons-row">
+          <button class="change-btn sub-btn" data-amount="-50">-50 zł</button>
+          <button class="change-btn add-btn" data-amount="50">+50 zł</button>
+
+          <button class="change-btn sub-btn" data-amount="-100">-100 zł</button>
+          <button class="change-btn add-btn" data-amount="100">+100 zł</button>
+
+          <button class="change-btn sub-btn" data-amount="-200">-200 zł</button>
+          <button class="change-btn add-btn" data-amount="200">+200 zł</button>
+
+          <button class="change-btn sub-btn" data-amount="-500">-500 zł</button>
+          <button class="change-btn add-btn" data-amount="500">+500 zł</button>
+
+          <button class="change-btn sub-btn" data-amount="-1000">-1000 zł</button>
+          <button class="change-btn add-btn" data-amount="1000">+1000 zł</button>
+        </div>
+      </section>
+
+      <aside class="admin-panel">
+        <h2>Profil administratora</h2>
+        <div class="login-panel">
+          <h3>Logowanie do konta celu</h3>
+          <div class="login-choices">
+            <label><input type="radio" name="login-user" value="kuba" checked /> Kuba</label>
+            <label><input type="radio" name="login-user" value="adrian" /> Adrian</label>
+          </div>
+          <input type="password" id="login-password" placeholder="Hasło" />
+          <div class="login-actions">
+            <button id="login-btn">Zaloguj</button>
+            <button id="logout-btn">Wyloguj</button>
+          </div>
+          <div id="login-status" class="login-status">Brak zalogowanego użytkownika</div>
+        </div>
+        <label>Imię administrującego:
+          <input type="text" id="admin-name" placeholder="Twoje imię" />
+        </label>
+        <div class="admin-actions">
+          <button id="save-admin">Zapisz profil</button>
+          <label class="admin-toggle">Włącz tryb admin
+            <input type="checkbox" id="admin-mode" />
+          </label>
+        </div>
+        <p class="note">Po kliknięciu przycisków zmiany zapisują się na zawsze (localStorage).</p>
+      </aside>
+
+      <footer>
+        <small>Prosty demo. Odświeżenie strony zachowa dane.</small>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
