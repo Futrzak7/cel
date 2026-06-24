@@ -2,10 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA_FILE = path.join(process.cwd(), 'data.json');
-let kv = null;
-let useKV = false;
-
-useKV = false;
+// try detect Vercel KV binding named `KV` (global)
+const kv = (typeof globalThis !== 'undefined' && globalThis.KV) ? globalThis.KV : (typeof KV !== 'undefined' ? KV : null);
 
 function loadLocal() {
   try {
@@ -13,20 +11,22 @@ function loadLocal() {
     return JSON.parse(raw);
   } catch (error) {
     const initial = { amounts: { kuba: 0, adrian: 0 }, current: 'kuba' };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
+    try { fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2)); } catch(e){}
     return initial;
   }
 }
 
 function saveLocal(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); } catch(e){}
 }
 
 async function loadState() {
-  if (useKV && kv) {
+  if (kv && typeof kv.get === 'function') {
     try {
-      const state = await kv.get('funds_state');
-      if (state) return state;
+      const raw = await kv.get('funds_state');
+      if (raw) {
+        try { return JSON.parse(raw); } catch(e){ return raw; }
+      }
     } catch (error) {
       // fallback to local
     }
@@ -35,15 +35,16 @@ async function loadState() {
 }
 
 async function saveState(data) {
-  if (useKV && kv) {
+  if (kv && typeof kv.set === 'function') {
     try {
-      await kv.set('funds_state', data);
-      return;
+      await kv.set('funds_state', JSON.stringify(data));
+      return true;
     } catch (error) {
       // fallback to local save
+      console.error('KV save failed', error && error.message);
     }
   }
-  saveLocal(data);
+  try { saveLocal(data); return true; } catch(e){ return false; }
 }
 
-module.exports = { loadState, saveState, useKV };
+module.exports = { loadState, saveState, hasKV: !!kv };

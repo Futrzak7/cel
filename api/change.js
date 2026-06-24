@@ -1,37 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-
-const DATA_FILE = path.join(process.cwd(), 'data.json');
+const storage = require('./storage');
 
 const PASSWORDS = {
   kuba: '13',
   adrian: '67'
 };
 
-function loadData() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch (error) {
-    const initial = { amounts: { kuba: 0, adrian: 0 }, current: 'kuba' };
-    return initial;
-  }
-}
-
-let STORE = loadData();
-
-function saveData(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    return true;
-  } catch (err) {
-    // cannot persist on serverless filesystem — keep in-memory
-    console.error('saveData failed:', err && err.message);
-    return false;
-  }
-}
-
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -49,11 +23,12 @@ module.exports = function handler(req, res) {
     if (!PASSWORDS[user] || PASSWORDS[user] !== String(password)) {
       return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
-    // Update in-memory store
-    STORE.amounts = STORE.amounts || { kuba: 0, adrian: 0 };
-    STORE.amounts[user] = Math.max(0, (STORE.amounts[user] || 0) + amount);
-    const persisted = saveData(STORE);
-    const result = { ok: true, state: STORE };
+    // load current state
+    const state = await storage.loadState();
+    state.amounts = state.amounts || { kuba: 0, adrian: 0 };
+    state.amounts[user] = Math.max(0, (state.amounts[user] || 0) + amount);
+    const persisted = await storage.saveState(state);
+    const result = { ok: true, state };
     if (!persisted) result.warning = 'unable_to_persist';
     return res.status(200).json(result);
   } catch (ex) {
