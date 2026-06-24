@@ -7,21 +7,49 @@ const GOALS = {
 // Updated per user request: Kuba -> '13', Adrian -> '67'
 const PASSWORDS = { kuba: '13', adrian: '67' };
 
-const STORAGE_KEY = 'funds_app_v1';
+const API_BASE = 'https://e-bike-progress-bar.vercel.app';
 
-function loadState(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(raw) return JSON.parse(raw);
-  const initial = { amounts: { kuba:0, adrian:0 }, current:'kuba', admin:{name:''}, sessionUser: null };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-  return initial;
+let state = { amounts: { kuba:0, adrian:0 }, current:'kuba', admin:{name:''}, sessionUser: null };
+let sessionPass = null; // keep password in memory during session only
+
+async function fetchServerState(){
+  try{
+    const r = await fetch(API_BASE + '/api/state');
+    if(!r.ok) throw new Error('No server');
+    const j = await r.json();
+    if(j && j.ok && j.state) return j.state;
+  }catch(e){
+    return null;
+  }
+  return null;
 }
 
-function saveState(s){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+async function saveToServerChange(user, amount){
+  try{
+    const r = await fetch(API_BASE + '/api/change', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user, amount, password: sessionPass })
+    });
+    const j = await r.json();
+    if(r.ok && j.ok) return j.state;
+    throw new Error(j && j.error ? j.error : 'Server error');
+  }catch(e){
+    throw e;
+  }
 }
 
-let state = loadState();
+async function saveCurrentToServer(current){
+  try{
+    const r = await fetch(API_BASE + '/api/setCurrent', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ current })
+    });
+    const j = await r.json();
+    if(r.ok && j.ok) return j.state;
+  }catch(e){
+    return null;
+  }
+  return null;
+}
 
 // DOM refs
 const goalTitle = document.getElementById('goal-title');
@@ -66,15 +94,44 @@ function addAmount(amount){
   const cur = state.current;
   const newVal = (state.amounts[cur] || 0) + amount;
   state.amounts[cur] = Math.max(0, newVal);
-  saveState(state);
+  // try save to server; if fails, fallback to local change
+  if(state.sessionUser && sessionPass){
+    saveToServerChange(state.sessionUser, amount).then(s=>{
+      if(s){ state = Object.assign(state, s); render(); }
+    }).catch(err=>{
+      // fallback locally
+      saveLocal();
+      render();
+      alert('Nie udało się zsynchronizować z serwerem: ' + err.message);
+    });
+  } else {
+    // no session or server — just local change
+    saveLocal();
+    render();
+  }
+}
+
+function saveLocal(){
+  try{ localStorage.setItem('funds_app_v1', JSON.stringify(state)); }catch(e){}
+}
+
+async function initState(){
+  // try server first
+  const s = await fetchServerState();
+  if(s){ state = Object.assign(state, s); render(); return; }
+  // fallback to localStorage
+  try{
+    const raw = localStorage.getItem('funds_app_v1');
+    if(raw) state = JSON.parse(raw);
+  }catch(e){}
   render();
 }
 
 goalButtons.forEach(btn => {
   btn.addEventListener('click', ()=>{
     state.current = btn.dataset.id;
-    saveState(state);
-    render();
+    // persist current to server if possible
+    saveCurrentToServer(state.current).then(s=>{ if(s) state = Object.assign(state, s); saveLocal(); render(); }).catch(()=>{ saveLocal(); render(); });
   })
 });
 
@@ -90,15 +147,17 @@ if(loginBtn){
   loginBtn.addEventListener('click', ()=>{
     const user = document.querySelector('input[name="login-user"]:checked').value;
     const pass = loginPassword.value || '';
-    if(PASSWORDS[user] && PASSWORDS[user] === pass){
+    // validate with server by attempting a no-op change of 0
+    sessionPass = pass;
+    saveToServerChange(user, 0).then(s=>{
       state.sessionUser = user;
-      saveState(state);
-      render();
+      if(s) state = Object.assign(state, s);
+      saveLocal(); render();
       alert('Zalogowano jako ' + user);
-    } else {
+    }).catch(e=>{
+      sessionPass = null;
       alert('Błędne hasło dla ' + user);
-    }
-    loginPassword.value = '';
+    }).finally(()=>{ loginPassword.value = ''; });
   });
 }
 
