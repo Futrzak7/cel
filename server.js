@@ -6,12 +6,6 @@ const bodyParser = require('body-parser');
 const DATA_FILE = path.join(__dirname, 'data.json');
 const PORT = process.env.PORT || 4000;
 
-// Read passwords from environment variables for Vercel. Fallback to defaults.
-const PASSWORDS = {
-  kuba: process.env.PW_KUBA || '13',
-  adrian: process.env.PW_ADRIAN || '67'
-};
-
 function loadData(){
   try{
     const raw = fs.readFileSync(DATA_FILE, 'utf8');
@@ -41,9 +35,9 @@ app.get('/api/state', (req, res) => {
 });
 
 app.post('/api/change', (req, res) => {
-  const { user, amount, password } = req.body || {};
+  const { user, amount } = req.body || {};
   if(!user || typeof amount !== 'number') return res.status(400).json({ ok:false, error: 'Invalid payload' });
-  if(!PASSWORDS[user] || PASSWORDS[user] !== String(password)) return res.status(401).json({ ok:false, error: 'Unauthorized' });
+  // No password required — anyone can update
   const d = loadData();
   d.amounts[user] = Math.max(0, (d.amounts[user]||0) + amount);
   saveData(d);
@@ -62,3 +56,4 @@ app.post('/api/setCurrent', (req, res) => {
 app.listen(PORT, ()=>{
   console.log('Server running on http://localhost:' + PORT);
 });
+
