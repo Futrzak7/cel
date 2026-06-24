@@ -4,7 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 
 const DATA_FILE = path.join(__dirname, 'data.json');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 // Read passwords from environment variables for Vercel. Fallback to defaults.
 const PASSWORDS = {

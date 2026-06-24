@@ -5,14 +5,7 @@ const DATA_FILE = path.join(process.cwd(), 'data.json');
 let kv = null;
 let useKV = false;
 
-try {
-  if (process.env.VERCEL_KV_URL) {
-    kv = require('@vercel/kv');
-    useKV = true;
-  }
-} catch (error) {
-  useKV = false;
-}
+useKV = false;
 
 function loadLocal() {
   try {

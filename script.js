@@ -7,17 +7,30 @@ const GOALS = {
 // Updated per user request: Kuba -> '13', Adrian -> '67'
 const PASSWORDS = { kuba: '13', adrian: '67' };
 
-const API_BASE = 'https://e-bike-progress-bar.vercel.app';
+// Use localhost backend when developing locally; on Vercel use same-origin paths.
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:4000'
+  : '';
 
 let state = { amounts: { kuba:0, adrian:0 }, current:'kuba', admin:{name:''}, sessionUser: null };
 let sessionPass = null; // keep password in memory during session only
 
+async function fetchJson(url, options){
+  const response = await fetch(url, options);
+  const text = await response.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (err) {
+    throw new Error('Invalid JSON response from server: ' + text.trim().slice(0, 120));
+  }
+  return { response, json };
+}
+
 async function fetchServerState(){
   try{
-    const r = await fetch(API_BASE + '/api/state');
-    if(!r.ok) throw new Error('No server');
-    const j = await r.json();
-    if(j && j.ok && j.state) return j.state;
+    const { response, json } = await fetchJson(API_BASE + '/api/state');
+    if(response.ok && json && json.ok && json.state) return json.state;
   }catch(e){
     return null;
   }
@@ -26,13 +39,12 @@ async function fetchServerState(){
 
 async function saveToServerChange(user, amount){
   try{
-    const r = await fetch(API_BASE + '/api/change', {
+    const { response, json } = await fetchJson(API_BASE + '/api/change', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ user, amount, password: sessionPass })
     });
-    const j = await r.json();
-    if(r.ok && j.ok) return j.state;
-    throw new Error(j && j.error ? j.error : 'Server error');
+    if(response.ok && json.ok) return json.state;
+    throw new Error(json && json.error ? json.error : 'Server error');
   }catch(e){
     throw e;
   }
@@ -40,11 +52,10 @@ async function saveToServerChange(user, amount){
 
 async function saveCurrentToServer(current){
   try{
-    const r = await fetch(API_BASE + '/api/setCurrent', {
+    const { response, json } = await fetchJson(API_BASE + '/api/setCurrent', {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ current })
     });
-    const j = await r.json();
-    if(r.ok && j.ok) return j.state;
+    if(response.ok && json.ok) return json.state;
   }catch(e){
     return null;
   }
@@ -156,7 +167,7 @@ if(loginBtn){
       alert('Zalogowano jako ' + user);
     }).catch(e=>{
       sessionPass = null;
-      alert('Błędne hasło dla ' + user);
+      alert('Błąd logowania: ' + (e.message || 'Błędne hasło dla ' + user));
     }).finally(()=>{ loginPassword.value = ''; });
   });
 }
@@ -183,4 +194,4 @@ adminModeCheckbox.addEventListener('change', ()=>{
 });
 
 // init
-render();
+initState();
