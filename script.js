@@ -127,15 +127,18 @@ function saveLocal(){
 }
 
 async function initState(){
-  // try server first
-  const s = await fetchServerState();
-  if(s){ state = Object.assign(state, s); render(); return; }
-  // fallback to localStorage
+  // Load local state first so UI shows immediately
   try{
     const raw = localStorage.getItem('funds_app_v1');
     if(raw) state = JSON.parse(raw);
   }catch(e){}
   render();
+  // Then try to fetch authoritative state from server and update UI when available
+  fetchServerState().then(s=>{
+    if(s){ state = Object.assign(state, s); saveLocal(); render(); }
+  }).catch(()=>{
+    // silent fallback; keep local
+  });
 }
 
 goalButtons.forEach(btn => {
