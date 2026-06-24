@@ -20,7 +20,7 @@ Po uruchomieniu otwórz w przeglądarce: `http://localhost:3000`.
 2. Wybierz cel na górze (Kuba lub Adrian).
 3. Kliknij jeden z przycisków pod paskiem (+/-) — suma zostanie zapisana na serwerze i będzie widoczna na innych urządzeniach podłączonych do tego samego serwera. Jeśli serwer jest niedostępny, zmiany zostaną zapisane lokalnie.
 4. W panelu administratora wpisz imię i kliknij "Zapisz profil" — także zapisze się w localStorage.
-5. Aby edytować saldo konkretnego celu, musisz się zalogować jako ten cel (Kuba lub Adrian). Zaloguj się używając domyślnych haseł (poniżej).
+5. Aby edytować saldo konkretnego celu, musisz się zalogować jako ten cel (Kuba lub Adrian). Użyj hasła wprowadzonego w kodzie serwera.
 
 
 Domyślne hasła demo (zaktualizowane):

@@ -4,8 +4,8 @@ const path = require('path');
 const DATA_FILE = path.join(process.cwd(), 'data.json');
 
 const PASSWORDS = {
-  kuba: process.env.PW_KUBA || '13',
-  adrian: process.env.PW_ADRIAN || '67'
+  kuba: '13',
+  adrian: '67'
 };
 
 function loadData() {
