@@ -9,7 +9,11 @@ module.exports = async function handler(req, res) {
       return res.status(200).end();
     }
     const state = await storage.loadState();
-    return res.status(200).json({ ok: true, state });
+    const payload = { ok: true, state };
+    if (storage.persistenceWarning) {
+      payload.warning = storage.persistenceWarning;
+    }
+    return res.status(200).json(payload);
   } catch (ex) {
     return res.status(500).json({ ok: false, error: 'Server exception: ' + (ex && ex.message) });
   }
