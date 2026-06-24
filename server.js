@@ -6,7 +6,11 @@ const bodyParser = require('body-parser');
 const DATA_FILE = path.join(__dirname, 'data.json');
 const PORT = process.env.PORT || 3000;
 
-const PASSWORDS = { kuba: '13', adrian: '67' };
+// Read passwords from environment variables for Vercel. Fallback to defaults.
+const PASSWORDS = {
+  kuba: process.env.PW_KUBA || '13',
+  adrian: process.env.PW_ADRIAN || '67'
+};
 
 function loadData(){
   try{
@@ -24,6 +28,8 @@ function saveData(d){
 }
 
 const app = express();
+const cors = require('cors');
+app.use(cors());
 app.use(bodyParser.json());
 
 // Serve static client files from project root

@@ -164,7 +164,7 @@ if(loginBtn){
 if(logoutBtn){
   logoutBtn.addEventListener('click', ()=>{
     state.sessionUser = null;
-    saveState(state);
+    saveLocal();
     render();
     alert('Wylogowano');
   });
@@ -172,7 +172,7 @@ if(logoutBtn){
 
 saveAdminBtn.addEventListener('click', ()=>{
   state.admin.name = adminNameInput.value.trim();
-  saveState(state);
+  saveLocal();
   alert('Profil administratora zapisany: ' + (state.admin.name||'(puste)'));
 });
 
