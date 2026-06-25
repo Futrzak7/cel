@@ -1,5 +1,4 @@
 const GOALS = {
-  kuba: { title: 'Kuba — Falcon Pro', target: 19500 },
   adrian: { title: 'Adrian — Surroin Light Bee X', target: 13300 }
 };
 
@@ -8,7 +7,7 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
   ? 'http://127.0.0.1:4000'
   : '';
 
-let state = { amounts: { kuba: 0, adrian: 0 }, current: 'kuba' };
+let state = { amounts: { adrian: 0 }, current: 'adrian' };
 
 async function fetchJson(url, options) {
   const response = await fetch(url, options);
